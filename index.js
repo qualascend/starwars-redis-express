@@ -11,14 +11,14 @@ const app = express();
 
 const getPeople = async (req, res, next) => {
   try {
-    console.log('Fetching Data...');
     const { id } = req.params;
+    console.log(`Fetching people data for id ${id}`);
 
     const response = await fetch(`https://swapi.co/api/people/${id}`);
 
     const people = await response.json();
 
-    client.setex(id, 3600, people);
+    client.set(id, JSON.stringify(people), 'EX', 3600);
 
     res.send(getResponse(people));
   } catch (err) {
@@ -28,11 +28,12 @@ const getPeople = async (req, res, next) => {
 };
 
 const getResponse = people => {
+  const { name, height, gender } = people;
   return `
     <ul>
-        <li>Name: ${people.name}</li>
-        <li>Height: ${people.height}</li>
-        <li>Gender: ${people.gender}</li>
+        <li>Name: ${name}</li>
+        <li>Height: ${height}</li>
+        <li>Gender: ${gender}</li>
     </ul>
     `;
 };
@@ -44,7 +45,7 @@ const cachePeople = (req, res, next) => {
     if (err) throw err;
 
     if (data !== null) {
-      res.send(getResponse(id, data));
+      res.send(getResponse(JSON.parse(data)));
     } else {
       next();
     }
